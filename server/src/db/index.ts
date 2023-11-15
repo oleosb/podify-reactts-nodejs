@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { MONGO_URI } from "../utils/variable";
+import { MONGO_URI } from "#/utils/variable";
 
 mongoose.set("strictQuery", true);
 mongoose
