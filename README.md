@@ -9,3 +9,4 @@
 -Mongoose
 -Tsconfig-path
 -Dotenv
+-Yup
