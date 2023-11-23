@@ -1,20 +1,19 @@
-//interface (typescript)
-
 import { Model, ObjectId, Schema, model } from "mongoose";
 
+// interface (typescript)
 interface EmailVerificationTokenDocument {
   owner: ObjectId;
   token: string;
   createdAt: Date;
 }
 
-//expire them after 1 hour
+// expire them after 1 hrs
 
 const emailVerificationTokenSchema = new Schema<EmailVerificationTokenDocument>(
   {
     owner: {
       type: Schema.Types.ObjectId,
-      requiredPaths: true,
+      required: true,
       ref: "User",
     },
     token: {
@@ -23,13 +22,13 @@ const emailVerificationTokenSchema = new Schema<EmailVerificationTokenDocument>(
     },
     createdAt: {
       type: Date,
-      expires: 3600,
+      expires: 3600, // 60 min * 60 sec = 3600s
       default: Date.now(),
     },
   }
 );
 
 export default model(
-  "emailVerificationTokenSchema",
+  "EmailVerificationToken",
   emailVerificationTokenSchema
 ) as Model<EmailVerificationTokenDocument>;
