@@ -23,7 +23,7 @@ export const create: RequestHandler = async (req: CreateUser, res) => {
   });
 
   const token = generateToken(6);
-  await EmailVerificationToken.create({
+  const newToken = await EmailVerificationToken.create({
     owner: user._id,
     token,
   });

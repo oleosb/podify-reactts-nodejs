@@ -10,3 +10,5 @@
 -Tsconfig-path
 -Dotenv
 -Yup
+-Nodemailer
+-bcrypt
