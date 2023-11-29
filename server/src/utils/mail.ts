@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import path from "path";
 
-import EmailVerificationToken from "models/emailVerificationToken";
+import EmailVerificationToken from "#/models/emailVerificationToken";
 import {
   MAILTRAP_PASSWORD,
   MAILTRAP_USER,

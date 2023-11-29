@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 
 import { CreateUser } from "#/@types/user";
-import User from "models/user";
+import User from "#/models/user";
 import { generateToken } from "#/utils/helper";
 import { sendVerificationMail } from "#/utils/mail";
 
