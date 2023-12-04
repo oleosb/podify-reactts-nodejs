@@ -1,4 +1,9 @@
-import { create, sendReVerificationToken, verifyEmail } from "#/controllers/user";
+import {
+  create,
+  generateForgetPasswordLink,
+  sendReVerificationToken,
+  verifyEmail,
+} from "#/controllers/user";
 import { validate } from "#/middleware/validator";
 import {
   CreateUserScheama,
@@ -12,5 +17,6 @@ const router = Router();
 router.post("/create", validate(CreateUserScheama), create);
 router.post("/verify-email", validate(EmailVerificationBody), verifyEmail);
 router.post("/re-verify-email", sendReVerificationToken);
+router.post("/forget-password", generateForgetPasswordLink);
 
 export default router;

@@ -59,6 +59,15 @@ export const sendReVerificationToken: RequestHandler = async (req, res) => {
   res.json({ message: "Please check your mail." });
 };
 
+export const generateForgetPasswordLink: RequestHandler = async (req, res) => {
+  const { email } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ error: "Account not found!" });
+
+  //generate link
+};
+
 export const create: RequestHandler = async (req: CreateUser, res) => {
   const { email, password, name } = req.body;
 
