@@ -4,8 +4,12 @@ import { CreateUser, VerifyEmailRequest } from "#/@types/user";
 import User from "#/models/user";
 import { generateToken } from "#/utils/helper";
 import EmailVerificationToken from "#/models/emailVerificationToken";
+import PasswordResetToken from "#/models/passwordResetToken";
 import { sendVerificationMail } from "#/utils/mail";
 import { isValidObjectId } from "mongoose";
+import crypto from "crypto";
+import user from "#/models/user";
+import { PASSWORD_RESET_LINK } from "#/utils/variables";
 
 export const verifyEmail: RequestHandler = async (
   req: VerifyEmailRequest,
@@ -66,6 +70,16 @@ export const generateForgetPasswordLink: RequestHandler = async (req, res) => {
   if (!user) return res.status(404).json({ error: "Account not found!" });
 
   //generate link
+
+  const token = crypto.randomBytes(36).toString("hex");
+
+  await PasswordResetToken.create({
+    owner: user._id,
+    token,
+  });
+
+  const resetLink = `${PASSWORD_RESET_LINK}?token=${token}&userId=${user._id}`;
+  res.json({ resetLink });
 };
 
 export const create: RequestHandler = async (req: CreateUser, res) => {
