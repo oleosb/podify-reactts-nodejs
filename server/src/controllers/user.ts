@@ -5,7 +5,7 @@ import User from "#/models/user";
 import { generateToken } from "#/utils/helper";
 import EmailVerificationToken from "#/models/emailVerificationToken";
 import PasswordResetToken from "#/models/passwordResetToken";
-import { sendVerificationMail } from "#/utils/mail";
+import { sendForgetPasswordLink, sendVerificationMail } from "#/utils/mail";
 import { isValidObjectId } from "mongoose";
 import crypto from "crypto";
 import user from "#/models/user";
@@ -71,6 +71,10 @@ export const generateForgetPasswordLink: RequestHandler = async (req, res) => {
 
   //generate link
 
+  await PasswordResetToken.findOneAndDelete({
+    owner: user._id,
+  });
+
   const token = crypto.randomBytes(36).toString("hex");
 
   await PasswordResetToken.create({
@@ -79,7 +83,10 @@ export const generateForgetPasswordLink: RequestHandler = async (req, res) => {
   });
 
   const resetLink = `${PASSWORD_RESET_LINK}?token=${token}&userId=${user._id}`;
-  res.json({ resetLink });
+
+  sendForgetPasswordLink({ email: user.email, link: resetLink });
+
+  res.json({ message: "Check yout registered mail." });
 };
 
 export const create: RequestHandler = async (req: CreateUser, res) => {
