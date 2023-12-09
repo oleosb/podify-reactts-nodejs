@@ -106,3 +106,21 @@ export const create: RequestHandler = async (req: CreateUser, res) => {
 
   res.status(201).json({ user: { id: user.id, name, email } });
 };
+
+export const isValidPassResetToken: RequestHandler = async (req, res) => {
+  const { token, userId } = req.body;
+
+  const resetToken = await PasswordResetToken.findOne({ owner: userId });
+  if (!resetToken)
+    return res
+      .status(403)
+      .json({ error: "Unauthorized access, invalid token!" });
+
+  const matched = await resetToken.compareToken(token);
+  if (!matched)
+    return res
+      .status(403)
+      .json({ error: "Invalid token! Unauthorized access." });
+
+  res.json({ message: "Your token is valid." });
+};
