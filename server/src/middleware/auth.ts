@@ -16,7 +16,5 @@ export const isValidPassResetToken: RequestHandler = async (req, res, next) => {
       .status(403)
       .json({ error: "Invalid token! Unauthorized access." });
 
-  res.json({ message: "Your token is valid." });
-
   next();
 };

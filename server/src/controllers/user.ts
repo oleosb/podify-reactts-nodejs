@@ -3,17 +3,34 @@ import { RequestHandler } from "express";
 import { CreateUser, VerifyEmailRequest } from "#/@types/user";
 import User from "#/models/user";
 import { generateToken } from "#/utils/helper";
-import EmailVerificationToken from "#/models/emailVerificationToken";
-import PasswordResetToken from "#/models/passwordResetToken";
 import {
   sendForgetPasswordLink,
   sendPassResetSuccessEmail,
   sendVerificationMail,
 } from "#/utils/mail";
+import EmailVerificationToken from "#/models/emailVerificationToken";
+import PasswordResetToken from "#/models/passwordResetToken";
 import { isValidObjectId } from "mongoose";
 import crypto from "crypto";
-import user from "#/models/user";
 import { PASSWORD_RESET_LINK } from "#/utils/variables";
+
+export const create: RequestHandler = async (req: CreateUser, res) => {
+  const { email, password, name } = req.body;
+
+  const user = await User.create({ name, email, password });
+
+  // send verification email
+  const token = generateToken(6);
+
+  await EmailVerificationToken.create({
+    owner: user._id,
+    token,
+  });
+
+  sendVerificationMail(token, { name, email, userId: user.id.toString() });
+
+  res.status(201).json({ user: { id: user.id, name, email } });
+};
 
 export const verifyEmail: RequestHandler = async (
   req: VerifyEmailRequest,
@@ -45,7 +62,7 @@ export const sendReVerificationToken: RequestHandler = async (req, res) => {
     return res.status(403).json({ error: "Invalid request1!" });
 
   const user = await User.findById(userId);
-  if (!user) return res.status(403).json({ error: "Invalid request2!" });
+  if (!user) return res.status(403).json({ error: "Invalid request!" });
 
   await EmailVerificationToken.findOneAndDelete({
     owner: userId,
@@ -91,24 +108,6 @@ export const generateForgetPasswordLink: RequestHandler = async (req, res) => {
   sendForgetPasswordLink({ email: user.email, link: resetLink });
 
   res.json({ message: "Check yout registered mail." });
-};
-
-export const create: RequestHandler = async (req: CreateUser, res) => {
-  const { email, password, name } = req.body;
-
-  const user = await User.create({ name, email, password });
-
-  // send verification email
-  const token = generateToken(6);
-
-  await EmailVerificationToken.create({
-    owner: user._id,
-    token,
-  });
-
-  sendVerificationMail(token, { name, email, userId: user.id.toString() });
-
-  res.status(201).json({ user: { id: user.id, name, email } });
 };
 
 export const grantValid: RequestHandler = async (req, res) => {

@@ -13,7 +13,6 @@ import {
   TokenAndIDValidation,
   UpdatePasswordSchema,
 } from "#/utils/validationSchema";
-import { verify } from "crypto";
 import { Router } from "express";
 
 const router = Router();
@@ -34,4 +33,5 @@ router.post(
   isValidPassResetToken,
   updatePassword
 );
+
 export default router;

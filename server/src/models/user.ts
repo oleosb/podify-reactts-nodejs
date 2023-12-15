@@ -1,8 +1,7 @@
-//interface (typescript)
-
 import { compare, hash } from "bcrypt";
 import { Model, ObjectId, Schema, model } from "mongoose";
 
+//interface (typescript)
 interface UserDocument {
   name: string;
   email: string;
@@ -51,8 +50,9 @@ const userSchema = new Schema<UserDocument, {}, Methods>(
 
 userSchema.pre("save", async function (next) {
   //hash the password
-  if (this.isModified("password"))
+  if (this.isModified("password")) {
     this.password = await hash(this.password, 10);
+  }
 
   next();
 });
