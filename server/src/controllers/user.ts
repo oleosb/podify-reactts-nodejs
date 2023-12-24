@@ -1,4 +1,5 @@
 import { RequestHandler } from "express";
+import jwt from "jsonwebtoken";
 
 import { CreateUser, VerifyEmailRequest } from "#/@types/user";
 import User from "#/models/user";
@@ -12,7 +13,7 @@ import EmailVerificationToken from "#/models/emailVerificationToken";
 import PasswordResetToken from "#/models/passwordResetToken";
 import { isValidObjectId } from "mongoose";
 import crypto from "crypto";
-import { PASSWORD_RESET_LINK } from "#/utils/variables";
+import { JWT_SECRET, PASSWORD_RESET_LINK } from "#/utils/variables";
 
 export const create: RequestHandler = async (req: CreateUser, res) => {
   const { email, password, name } = req.body;
@@ -20,16 +21,15 @@ export const create: RequestHandler = async (req: CreateUser, res) => {
   const user = await User.create({ name, email, password });
 
   // send verification email
-  const token = generateToken(6);
-
+  const token = generateToken();
   await EmailVerificationToken.create({
     owner: user._id,
     token,
   });
 
-  sendVerificationMail(token, { name, email, userId: user.id.toString() });
+  sendVerificationMail(token, { name, email, userId: user._id.toString() });
 
-  res.status(201).json({ user: { id: user.id, name, email } });
+  res.status(201).json({ user: { id: user._id, name, email } });
 };
 
 export const verifyEmail: RequestHandler = async (
@@ -48,18 +48,19 @@ export const verifyEmail: RequestHandler = async (
   const matched = await verificationToken.compareToken(token);
   if (!matched) return res.status(403).json({ error: "Invalid token!" });
 
-  await User.findByIdAndUpdate(userId, { verified: true });
-
+  await User.findByIdAndUpdate(userId, {
+    verified: true,
+  });
   await EmailVerificationToken.findByIdAndDelete(verificationToken._id);
 
-  res.json({ message: "Your email is verified" });
+  res.json({ message: "Your email is verified." });
 };
 
 export const sendReVerificationToken: RequestHandler = async (req, res) => {
   const { userId } = req.body;
 
   if (!isValidObjectId(userId))
-    return res.status(403).json({ error: "Invalid request1!" });
+    return res.status(403).json({ error: "Invalid request!" });
 
   const user = await User.findById(userId);
   if (!user) return res.status(403).json({ error: "Invalid request!" });
@@ -81,7 +82,7 @@ export const sendReVerificationToken: RequestHandler = async (req, res) => {
     userId: user?._id.toString(),
   });
 
-  res.json({ message: "Please check your mail." });
+  res.json({ message: "Please check you mail." });
 };
 
 export const generateForgetPasswordLink: RequestHandler = async (req, res) => {
@@ -90,7 +91,8 @@ export const generateForgetPasswordLink: RequestHandler = async (req, res) => {
   const user = await User.findOne({ email });
   if (!user) return res.status(404).json({ error: "Account not found!" });
 
-  //generate link
+  // generate the link
+  // https://yourapp.com/reset-passwod?token=hfkshf4322hfjkds&userId=67jhfdsahf43
 
   await PasswordResetToken.findOneAndDelete({
     owner: user._id,
@@ -107,7 +109,7 @@ export const generateForgetPasswordLink: RequestHandler = async (req, res) => {
 
   sendForgetPasswordLink({ email: user.email, link: resetLink });
 
-  res.json({ message: "Check yout registered mail." });
+  res.json({ message: "Check you registered mail." });
 };
 
 export const grantValid: RequestHandler = async (req, res) => {
@@ -121,7 +123,7 @@ export const updatePassword: RequestHandler = async (req, res) => {
   if (!user) return res.status(403).json({ error: "Unauthorized access!" });
 
   const matched = await user.comparePassword(password);
-  if (!matched)
+  if (matched)
     return res
       .status(422)
       .json({ error: "The new password must be different!" });
@@ -130,9 +132,41 @@ export const updatePassword: RequestHandler = async (req, res) => {
   await user.save();
 
   await PasswordResetToken.findOneAndDelete({ owner: user._id });
-
-  //send the success email
+  // send the success email
 
   sendPassResetSuccessEmail(user.name, user.email);
   res.json({ message: "Password resets successfully." });
+};
+
+export const signIn: RequestHandler = async (req, res) => {
+  const { password, email } = req.body;
+
+  const user = await User.findOne({
+    email,
+  });
+  if (!user) return res.status(403).json({ error: "Email/Password mismatch!" });
+
+  // compare the password
+  const matched = await user.comparePassword(password);
+  if (!matched)
+    return res.status(403).json({ error: "Email/Password mismatch!" });
+
+  // generate the token for later use.
+  const token = jwt.sign({ userId: user._id }, JWT_SECRET);
+  user.tokens.push(token);
+
+  await user.save();
+
+  res.json({
+    profile: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      verified: user.verified,
+      avatar: user.avatar?.url,
+      followers: user.followers.length,
+      followings: user.followings.length,
+    },
+    token,
+  });
 };
