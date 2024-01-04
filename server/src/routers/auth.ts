@@ -1,24 +1,49 @@
-import { Request, RequestHandler } from "express";
-import formidable, { Files } from "formidable";
+import {
+  create,
+  generateForgetPasswordLink,
+  grantValid,
+  sendReVerificationToken,
+  signIn,
+  updatePassword,
+  updateProfile,
+  verifyEmail,
+} from "#/controllers/user";
+import { isValidPassResetToken, mustAuth } from "#/middleware/auth";
+import { validate } from "#/middleware/validator";
+import {
+  CreateUserSchema,
+  SignInValidationSchema,
+  TokenAndIDValidation,
+  UpdatePasswordSchema,
+} from "#/utils/validationSchema";
+import { Router } from "express";
+import fileParser, { RequestWithFiles } from "#/middleware/fileParser";
 
-export interface RequestWithFiles extends Request {
-  files?: Files;
-}
+const router = Router();
 
-const fileParser: RequestHandler = (req: RequestWithFiles, res, next) => {
-  if (!req.headers["content-type"]?.startsWith("multipart/form-data;"))
-    return res.status(422).json({ error: "Only accepts form-data!" });
-
-  const form = formidable({ multiples: false });
-
-  form.parse(req, (err, fields, files) => {
-    if (err) return next(err);
-
-    req.body = fields;
-    req.files = files;
-
-    next();
+router.post("/create", validate(CreateUserSchema), create);
+router.post("/verify-email", validate(TokenAndIDValidation), verifyEmail);
+router.post("/re-verify-email", sendReVerificationToken);
+router.post("/forget-password", generateForgetPasswordLink);
+router.post(
+  "/verify-pass-reset-token",
+  validate(TokenAndIDValidation),
+  isValidPassResetToken,
+  grantValid
+);
+router.post(
+  "/update-password",
+  validate(UpdatePasswordSchema),
+  isValidPassResetToken,
+  updatePassword
+);
+router.post("/sign-in", validate(SignInValidationSchema), signIn);
+router.get("/is-auth", mustAuth, (req, res) => {
+  res.json({
+    profile: req.user,
   });
-};
+});
 
-export default fileParser;
+router.post("/update-profile", mustAuth, fileParser, updateProfile);
+
+export default router;
