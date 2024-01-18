@@ -43,14 +43,17 @@ export const updateHistory: RequestHandler = async (req, res) => {
     {
       $project: {
         _id: 0,
-        audio: "$all.audio",
+        audioId: "$all.audio",
       },
     },
   ]);
 
-  const sameDayHistory = histories.find((item) => {
-    if (item.audio.toString() === audio) return item;
-  });
+  // const sameDayHistory = histories.find((item) => {
+  //   if (item.audio.toString() === audio) return item;
+  // });
+  const sameDayHistory = histories.find(
+    ({ audioId }) => audioId.toString() === audio
+  );
 
   if (sameDayHistory) {
     await History.findOneAndUpdate(
@@ -71,6 +74,27 @@ export const updateHistory: RequestHandler = async (req, res) => {
       $set: { last: history },
     });
   }
+
+  res.json(histories);
+};
+
+export const removeHistory: RequestHandler = async (req, res) => {
+  const removeAll = req.query.all === "yes";
+
+  if (removeAll) {
+    // remove all the history
+    await History.findOneAndDelete({ owner: req.user.id });
+    return res.json({ success: true });
+  }
+
+  const histories = req.query.histories as string;
+  const ids = JSON.parse(histories) as string[];
+  await History.findOneAndUpdate(
+    { owner: req.user.id },
+    {
+      $pull: { all: { _id: ids } },
+    }
+  );
 
   res.json({ success: true });
 };
